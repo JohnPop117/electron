@@ -1481,10 +1481,10 @@ void WebContents::InspectElement(int x, int y) {
 
 void WebContents::InspectSharedWorker() {
   if (type_ == Type::REMOTE)
-    return;
+      return;
 
   if (!enable_devtools_)
-    return;
+      return;
 
   for (const auto& agent_host : content::DevToolsAgentHost::GetOrCreateAll()) {
     if (agent_host->GetType() ==
@@ -1492,6 +1492,43 @@ void WebContents::InspectSharedWorker() {
       OpenDevTools(nullptr);
       managed_web_contents()->AttachTo(agent_host);
       break;
+    }
+  }
+}
+    
+int WebContents::GetNumberOfSharedWorkers(){
+  if (type_ == Type::REMOTE)
+    return 0;
+
+  if (!enable_devtools_)
+    return 0;
+  int count = 0;
+  for (const auto& agent_host : content::DevToolsAgentHost::GetOrCreateAll()) {
+    if (agent_host->GetType() ==
+        content::DevToolsAgentHost::kTypeSharedWorker) {
+      count++;
+    }
+  }
+  return count;
+}
+
+void WebContents::InspectSharedWorkerIndex(int index){
+  if (type_ == Type::REMOTE)
+    return;
+
+  if (!enable_devtools_)
+    return;
+
+  int count = 0;
+  for (const auto& agent_host : content::DevToolsAgentHost::GetOrCreateAll()) {
+    if (agent_host->GetType() ==
+        content::DevToolsAgentHost::kTypeSharedWorker) {
+      if(count == index){
+        OpenDevTools(nullptr);
+        managed_web_contents()->AttachTo(agent_host);
+        break;
+      }
+      count++;
     }
   }
 }
@@ -2281,6 +2318,9 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getOwnerBrowserWindow", &WebContents::GetOwnerBrowserWindow)
       .SetMethod("inspectServiceWorker", &WebContents::InspectServiceWorker)
       .SetMethod("inspectSharedWorker", &WebContents::InspectSharedWorker)
+    .SetMethod("getNumberOfSharedWorkers", &WebContents::GetNumberOfSharedWorkers)
+    .SetMethod("inspectSharedWorkerIndex", &WebContents::InspectSharedWorkerIndex)
+    .SetMethod("getSharedWorkers", &WebContents::GetSharedWorkers)
 #if BUILDFLAG(ENABLE_PRINTING)
       .SetMethod("_print", &WebContents::Print)
       .SetMethod("_getPrinters", &WebContents::GetPrinterList)

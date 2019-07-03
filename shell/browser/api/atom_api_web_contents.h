@@ -171,6 +171,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void DisableDeviceEmulation();
   void InspectElement(int x, int y);
   void InspectSharedWorker();
+  void InspectSharedWorkerIndex(int index);
+  int GetNumberOfSharedWorkers();
   void InspectServiceWorker();
   void SetIgnoreMenuShortcuts(bool ignore);
   void SetAudioMuted(bool muted);
