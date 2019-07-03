@@ -1419,6 +1419,14 @@ Starts inspecting element at position (`x`, `y`).
 
 Opens the developer tools for the shared worker context.
 
+#### `contents.InspectSharedWorkerById(std::string worker_id)`
+
+Inspects the shared worker based on it's id
+
+#### `contents.GetAllSharedWorkers()`
+
+Returns a vector of SharedWorker pointers
+
 #### `contents.inspectServiceWorker()`
 
 Opens the developer tools for the service worker context.

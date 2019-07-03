@@ -1258,4 +1258,19 @@ describe('webContents module', () => {
       expect(data).to.be.an.instanceof(Buffer).that.is.not.empty()
     })
   })
+
+  describe('Shared Workers', () => {
+    it('can get multiple shared workers', () => {
+      w.loadFile(path.join(fixtures, 'api', 'shared-worker', 'shared-worker.html'))
+      setTimeout(() => {
+        const contents = webContents.getAllWebContents()
+        console.log('Contents Size:' + contents.length)
+        contents.forEach((item, index) => {
+          console.log('Number of shared Workers:' + item.getAllSharedWorkers())
+          const vectorOfWorkers = item.getAllSharedWorkers()
+          expect(vectorOfWorkers.length).to.equal(2)
+        }, 30000)
+      })
+    })
+  })
 })
