@@ -13,6 +13,7 @@
 #include "base/observer_list.h"
 #include "base/observer_list_types.h"
 #include "content/common/cursors/webcursor.h"
+#include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/keyboard_event_processing_result.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_binding_set.h"
@@ -172,7 +173,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void InspectElement(int x, int y);
   void InspectSharedWorker();
   void InspectSharedWorkerIndex(int index);
-  int GetNumberOfSharedWorkers();
+  void InspectSharedWorkerById(std::string worker_id);
+  std::vector<scoped_refptr<content::DevToolsAgentHost>> GetAllSharedWorkers();
   void InspectServiceWorker();
   void SetIgnoreMenuShortcuts(bool ignore);
   void SetAudioMuted(bool muted);

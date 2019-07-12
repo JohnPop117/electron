@@ -1,0 +1,23 @@
+<!DOCTYPE HTML>
+<meta charset="utf-8">
+  <title></title>
+  <pre id="log">Log:</pre>
+  <script>
+    
+    var worker1 = new SharedWorker('shared-worker1.js');
+    var worker2 = new SharedWorker('shared-worker2.js');
+    
+    worker1.port.addEventListener('message', function(e) {
+      log.textContent += '\n' + e.data;
+    }, false);
+    worker1.port.start(); // note: need this when using addEventListener
+    worker1.port.postMessage('ping');
+    
+    worker2.port.addEventListener('message', function(e) {
+      log.textContent += '\n' + e.data;
+    }, false);
+    worker2.port.start(); // note: need this when using addEventListener
+    worker2.port.postMessage('ping');
+    
+  </script>
+</meta>
