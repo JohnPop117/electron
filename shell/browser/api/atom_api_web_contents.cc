@@ -1509,43 +1509,6 @@ void WebContents::InspectSharedWorker() {
   }
 }
 
-int WebContents::GetNumberOfSharedWorkers() {
-  if (type_ == Type::REMOTE)
-    return 0;
-
-  if (!enable_devtools_)
-    return 0;
-  int count = 0;
-  for (const auto& agent_host : content::DevToolsAgentHost::GetOrCreateAll()) {
-    if (agent_host->GetType() ==
-        content::DevToolsAgentHost::kTypeSharedWorker) {
-      count++;
-    }
-  }
-  return count;
-}
-
-void WebContents::InspectSharedWorkerIndex(int index) {
-  if (type_ == Type::REMOTE)
-    return;
-
-  if (!enable_devtools_)
-    return;
-
-  int count = 0;
-  for (const auto& agent_host : content::DevToolsAgentHost::GetOrCreateAll()) {
-    if (agent_host->GetType() ==
-        content::DevToolsAgentHost::kTypeSharedWorker) {
-      if (count == index) {
-        OpenDevTools(nullptr);
-        managed_web_contents()->AttachTo(agent_host);
-        break;
-      }
-      count++;
-    }
-  }
-}
-
 void WebContents::InspectSharedWorkerById(std::string worker_id) {
   if (type_ == Type::REMOTE)
     return;
