@@ -113,341 +113,6 @@ describe('BrowserWindow module', () => {
 
   afterEach(closeTheWindow)
 
-  describe('BrowserWindow.setAutoHideCursor(autoHide)', () => {
-    describe('on macOS', () => {
-      before(function () {
-        if (process.platform !== 'darwin') {
-          this.skip()
-        }
-      })
-
-      it('allows changing cursor auto-hiding', () => {
-        expect(() => {
-          w.setAutoHideCursor(false)
-          w.setAutoHideCursor(true)
-        }).to.not.throw()
-      })
-    })
-
-    describe('on non-macOS platforms', () => {
-      before(function () {
-        if (process.platform === 'darwin') {
-          this.skip()
-        }
-      })
-
-      it('is not available', () => {
-        expect(w.setAutoHideCursor).to.be.undefined()
-      })
-    })
-  })
-
-  describe('BrowserWindow.setWindowButtonVisibility()', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
-    })
-
-    it('does not throw', () => {
-      expect(() => {
-        w.setWindowButtonVisibility(true)
-        w.setWindowButtonVisibility(false)
-      }).to.not.throw()
-    })
-
-    it('throws with custom title bar buttons', () => {
-      expect(() => {
-        w.destroy()
-        w = new BrowserWindow({
-          show: false,
-          titleBarStyle: 'customButtonsOnHover',
-          frame: false
-        })
-        w.setWindowButtonVisibility(true)
-      }).to.throw('Not supported for this window')
-    })
-  })
-
-  describe('BrowserWindow.setVibrancy(type)', () => {
-    it('allows setting, changing, and removing the vibrancy', () => {
-      expect(() => {
-        w.setVibrancy('light')
-        w.setVibrancy('dark')
-        w.setVibrancy(null)
-        w.setVibrancy('ultra-dark')
-        w.setVibrancy('')
-      }).to.not.throw()
-    })
-  })
-
-  describe('BrowserWindow.setAppDetails(options)', () => {
-    before(function () {
-      if (process.platform !== 'win32') {
-        this.skip()
-      }
-    })
-
-    it('supports setting the app details', () => {
-      const iconPath = path.join(fixtures, 'assets', 'icon.ico')
-
-      expect(() => {
-        w.setAppDetails({ appId: 'my.app.id' })
-        w.setAppDetails({ appIconPath: iconPath, appIconIndex: 0 })
-        w.setAppDetails({ appIconPath: iconPath })
-        w.setAppDetails({ relaunchCommand: 'my-app.exe arg1 arg2', relaunchDisplayName: 'My app name' })
-        w.setAppDetails({ relaunchCommand: 'my-app.exe arg1 arg2' })
-        w.setAppDetails({ relaunchDisplayName: 'My app name' })
-        w.setAppDetails({
-          appId: 'my.app.id',
-          appIconPath: iconPath,
-          appIconIndex: 0,
-          relaunchCommand: 'my-app.exe arg1 arg2',
-          relaunchDisplayName: 'My app name'
-        })
-        w.setAppDetails({})
-      }).to.not.throw()
-
-      expect(() => {
-        w.setAppDetails()
-      }).to.throw('Insufficient number of arguments.')
-    })
-  })
-
-  describe('BrowserWindow.fromId(id)', () => {
-    it('returns the window with id', () => {
-      expect(BrowserWindow.fromId(w.id).id).to.equal(w.id)
-    })
-  })
-
-  describe('BrowserWindow.fromWebContents(webContents)', () => {
-    let contents = null
-
-    beforeEach(() => { contents = webContents.create({}) })
-
-    afterEach(() => { contents.destroy() })
-
-    it('returns the window with the webContents', () => {
-      expect(BrowserWindow.fromWebContents(w.webContents).id).to.equal(w.id)
-      expect(BrowserWindow.fromWebContents(contents)).to.be.undefined()
-    })
-  })
-
-  describe('BrowserWindow.fromDevToolsWebContents(webContents)', () => {
-    let contents = null
-
-    beforeEach(() => { contents = webContents.create({}) })
-
-    afterEach(() => { contents.destroy() })
-
-    it('returns the window with the webContents', (done) => {
-      w.webContents.once('devtools-opened', () => {
-        expect(BrowserWindow.fromDevToolsWebContents(w.devToolsWebContents).id).to.equal(w.id)
-        expect(BrowserWindow.fromDevToolsWebContents(w.webContents)).to.be.undefined()
-        expect(BrowserWindow.fromDevToolsWebContents(contents)).to.be.undefined()
-        done()
-      })
-      w.webContents.openDevTools()
-    })
-  })
-
-  describe('BrowserWindow.openDevTools()', () => {
-    it('does not crash for frameless window', () => {
-      w.destroy()
-      w = new BrowserWindow({ show: false })
-      w.openDevTools()
-    })
-  })
-
-  describe('BrowserWindow.fromBrowserView(browserView)', () => {
-    let bv = null
-
-    beforeEach(() => {
-      bv = new BrowserView()
-      w.setBrowserView(bv)
-    })
-
-    afterEach(() => {
-      w.setBrowserView(null)
-      bv.destroy()
-    })
-
-    it('returns the window with the browserView', () => {
-      expect(BrowserWindow.fromBrowserView(bv).id).to.equal(w.id)
-    })
-
-    it('returns undefined if not attached', () => {
-      w.setBrowserView(null)
-      expect(BrowserWindow.fromBrowserView(bv)).to.be.null()
-    })
-  })
-
-  describe('BrowserWindow.setOpacity(opacity)', () => {
-    it('make window with initial opacity', () => {
-      w.destroy()
-      w = new BrowserWindow({
-        show: false,
-        width: 400,
-        height: 400,
-        opacity: 0.5
-      })
-      expect(w.getOpacity()).to.equal(0.5)
-    })
-    it('allows setting the opacity', () => {
-      expect(() => {
-        w.setOpacity(0.0)
-        expect(w.getOpacity()).to.equal(0.0)
-        w.setOpacity(0.5)
-        expect(w.getOpacity()).to.equal(0.5)
-        w.setOpacity(1.0)
-        expect(w.getOpacity()).to.equal(1.0)
-      }).to.not.throw()
-    })
-  })
-
-  describe('BrowserWindow.setShape(rects)', () => {
-    it('allows setting shape', () => {
-      expect(() => {
-        w.setShape([])
-        w.setShape([{ x: 0, y: 0, width: 100, height: 100 }])
-        w.setShape([{ x: 0, y: 0, width: 100, height: 100 }, { x: 0, y: 200, width: 1000, height: 100 }])
-        w.setShape([])
-      }).to.not.throw()
-    })
-  })
-
-  describe('"useContentSize" option', () => {
-    it('make window created with content size when used', () => {
-      w.destroy()
-      w = new BrowserWindow({
-        show: false,
-        width: 400,
-        height: 400,
-        useContentSize: true
-      })
-      const contentSize = w.getContentSize()
-      expect(contentSize).to.deep.equal([400, 400])
-    })
-    it('make window created with window size when not used', () => {
-      const size = w.getSize()
-      expect(size).to.deep.equal([400, 400])
-    })
-    it('works for a frameless window', () => {
-      w.destroy()
-      w = new BrowserWindow({
-        show: false,
-        frame: false,
-        width: 400,
-        height: 400,
-        useContentSize: true
-      })
-      const contentSize = w.getContentSize()
-      expect(contentSize).to.deep.equal([400, 400])
-      const size = w.getSize()
-      expect(size).to.deep.equal([400, 400])
-    })
-  })
-
-  describe('"titleBarStyle" option', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
-
-      if (parseInt(os.release().split('.')[0]) < 14) {
-        this.skip()
-      }
-    })
-
-    it('creates browser window with hidden title bar', () => {
-      w.destroy()
-      w = new BrowserWindow({
-        show: false,
-        width: 400,
-        height: 400,
-        titleBarStyle: 'hidden'
-      })
-      const contentSize = w.getContentSize()
-      expect(contentSize).to.deep.equal([400, 400])
-    })
-    it('creates browser window with hidden inset title bar', () => {
-      w.destroy()
-      w = new BrowserWindow({
-        show: false,
-        width: 400,
-        height: 400,
-        titleBarStyle: 'hiddenInset'
-      })
-      const contentSize = w.getContentSize()
-      expect(contentSize).to.deep.equal([400, 400])
-    })
-  })
-
-  describe('enableLargerThanScreen" option', () => {
-    before(function () {
-      if (process.platform === 'linux') {
-        this.skip()
-      }
-    })
-
-    beforeEach(() => {
-      w.destroy()
-      w = new BrowserWindow({
-        show: true,
-        width: 400,
-        height: 400,
-        enableLargerThanScreen: true
-      })
-    })
-
-    it('can move the window out of screen', () => {
-      w.setPosition(-10, -10)
-      const after = w.getPosition()
-      expect(after).to.deep.equal([-10, -10])
-    })
-    it('can set the window larger than screen', () => {
-      const size = screen.getPrimaryDisplay().size
-      size.width += 100
-      size.height += 100
-      w.setSize(size.width, size.height)
-      expectBoundsEqual(w.getSize(), [size.width, size.height])
-    })
-  })
-
-  describe('"zoomToPageWidth" option', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
-    })
-
-    it('sets the window width to the page width when used', () => {
-      w.destroy()
-      w = new BrowserWindow({
-        show: false,
-        width: 500,
-        height: 400,
-        zoomToPageWidth: true
-      })
-      w.maximize()
-      expect(w.getSize()[0]).to.equal(500)
-    })
-  })
-
-  describe('"tabbingIdentifier" option', () => {
-    it('can be set on a window', () => {
-      w.destroy()
-      w = new BrowserWindow({
-        tabbingIdentifier: 'group1'
-      })
-      w.destroy()
-      w = new BrowserWindow({
-        tabbingIdentifier: 'group2',
-        frame: false
-      })
-    })
-  })
-
   describe('"webPreferences" option', () => {
     afterEach(() => { ipcMain.removeAllListeners('answer') })
 
@@ -545,7 +210,8 @@ describe('BrowserWindow module', () => {
     describe('session preload scripts', function () {
       const preloads = [
         path.join(fixtures, 'module', 'set-global-preload-1.js'),
-        path.join(fixtures, 'module', 'set-global-preload-2.js')
+        path.join(fixtures, 'module', 'set-global-preload-2.js'),
+        path.relative(process.cwd(), path.join(fixtures, 'module', 'set-global-preload-3.js'))
       ]
       const defaultSession = session.defaultSession
 
@@ -564,9 +230,10 @@ describe('BrowserWindow module', () => {
       const generateSpecs = (description, sandbox) => {
         describe(description, () => {
           it('loads the script before other scripts in window including normal preloads', function (done) {
-            ipcMain.once('vars', function (event, preload1, preload2) {
+            ipcMain.once('vars', function (event, preload1, preload2, preload3) {
               expect(preload1).to.equal('preload-1')
               expect(preload2).to.equal('preload-1-2')
+              expect(preload3).to.be.null()
               done()
             })
             w.destroy()
@@ -1168,6 +835,27 @@ describe('BrowserWindow module', () => {
           w.reload()
         })
         w.loadFile(path.join(fixtures, 'api', 'native-window-open-native-addon.html'))
+      })
+      it('<webview> works in a scriptable popup', (done) => {
+        const preload = path.join(fixtures, 'api', 'new-window-webview-preload.js')
+
+        w.destroy()
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nodeIntegrationInSubFrames: true,
+            nativeWindowOpen: true,
+            webviewTag: true,
+            preload
+          }
+        })
+
+        ipcRenderer.send('set-options-on-next-new-window', w.webContents.id, 'show', false)
+
+        ipcMain.once('webview-loaded', () => {
+          done()
+        })
+        w.loadFile(path.join(fixtures, 'api', 'new-window-webview.html'))
       })
       it('should inherit the nativeWindowOpen setting in opened windows', (done) => {
         w.destroy()
@@ -3004,6 +2692,7 @@ describe('BrowserWindow module', () => {
       })
     })
 
+    // TODO(codebytere): remove in Electron v8.0.0
     describe('window.webContents.getFrameRate()', () => {
       it('has default frame rate', (done) => {
         w.webContents.once('paint', function (event, rect, data) {
@@ -3014,12 +2703,34 @@ describe('BrowserWindow module', () => {
       })
     })
 
+    // TODO(codebytere): remove in Electron v8.0.0
     describe('window.webContents.setFrameRate(frameRate)', () => {
       it('sets custom frame rate', (done) => {
         w.webContents.on('dom-ready', () => {
           w.webContents.setFrameRate(30)
           w.webContents.once('paint', function (event, rect, data) {
             expect(w.webContents.getFrameRate()).to.equal(30)
+            done()
+          })
+        })
+        w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'))
+      })
+    })
+
+    describe('window.webContents.FrameRate', () => {
+      it('has default frame rate', (done) => {
+        w.webContents.once('paint', function (event, rect, data) {
+          expect(w.webContents.frameRate).to.equal(60)
+          done()
+        })
+        w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'))
+      })
+
+      it('sets custom frame rate', (done) => {
+        w.webContents.on('dom-ready', () => {
+          w.webContents.frameRate = 30
+          w.webContents.once('paint', function (event, rect, data) {
+            expect(w.webContents.frameRate).to.equal(30)
             done()
           })
         })

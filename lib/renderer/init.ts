@@ -179,14 +179,17 @@ if (nodeIntegration) {
     }
   }
 } else {
-  // Delete Node's symbols after the Environment has been loaded.
-  process.once('loaded', function () {
-    delete global.process
-    delete global.Buffer
-    delete global.setImmediate
-    delete global.clearImmediate
-    delete global.global
-  })
+  // Delete Node's symbols after the Environment has been loaded in a
+  // non context-isolated environment
+  if (!contextIsolation) {
+    process.once('loaded', function () {
+      delete global.process
+      delete global.Buffer
+      delete global.setImmediate
+      delete global.clearImmediate
+      delete global.global
+    })
+  }
 }
 
 const errorUtils = require('@electron/internal/common/error-utils')
@@ -197,7 +200,7 @@ for (const preloadScript of preloadScripts) {
     Module._load(preloadScript)
   } catch (error) {
     console.error(`Unable to load preload script: ${preloadScript}`)
-    console.error(`${error}`)
+    console.error(error)
 
     ipcRendererInternal.send('ELECTRON_BROWSER_PRELOAD_ERROR', preloadScript, errorUtils.serialize(error))
   }

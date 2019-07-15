@@ -26,6 +26,7 @@
 #include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "shell/browser/window_list.h"
+#include "shell/common/deprecate_util.h"
 #include "shell/common/options_switches.h"
 #include "skia/ext/skia_utils_mac.h"
 #include "ui/gfx/skia_util.h"
@@ -492,6 +493,8 @@ void NativeWindowMac::Close() {
   // When this is a sheet showing, performClose won't work.
   if (is_modal() && parent() && IsVisible()) {
     [parent()->GetNativeWindow().GetNativeNSWindow() endSheet:window_];
+    // Manually emit close event (not triggered from close fn)
+    NotifyWindowCloseButtonClicked();
     CloseImmediately();
     return;
   }
@@ -1073,6 +1076,13 @@ void NativeWindowMac::SetContentProtection(bool enable) {
       setSharingType:enable ? NSWindowSharingNone : NSWindowSharingReadOnly];
 }
 
+void NativeWindowMac::SetFocusable(bool focusable) {
+  // No known way to unfocus the window if it had the focus. Here we do not
+  // want to call Focus(false) because it moves the window to the back, i.e.
+  // at the bottom in term of z-order.
+  [window_ setDisableKeyOrMainWindow:!focusable];
+}
+
 void NativeWindowMac::AddBrowserView(NativeBrowserView* view) {
   [CATransaction begin];
   [CATransaction setDisableActions:YES];
@@ -1286,20 +1296,31 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
                            relativeTo:nil];
   }
 
-  NSVisualEffectMaterial vibrancyType = NSVisualEffectMaterialLight;
+  std::string dep_warn =
+      " has been deprecated and will be removed in a future version of macOS.";
+  node::Environment* env =
+      node::Environment::GetCurrent(v8::Isolate::GetCurrent());
+
+  NSVisualEffectMaterial vibrancyType;
 
   if (type == "appearance-based") {
+    EmitDeprecationWarning(
+        env, "NSVisualEffectMaterialAppearanceBased" + dep_warn, "electron");
     vibrancyType = NSVisualEffectMaterialAppearanceBased;
   } else if (type == "light") {
+    EmitDeprecationWarning(env, "NSVisualEffectMaterialLight" + dep_warn,
+                           "electron");
     vibrancyType = NSVisualEffectMaterialLight;
   } else if (type == "dark") {
+    EmitDeprecationWarning(env, "NSVisualEffectMaterialDark" + dep_warn,
+                           "electron");
     vibrancyType = NSVisualEffectMaterialDark;
   } else if (type == "titlebar") {
     vibrancyType = NSVisualEffectMaterialTitlebar;
   }
 
   if (@available(macOS 10.11, *)) {
-    // TODO(kevinsawicki): Use NSVisualEffectMaterial* constants directly once
+    // TODO(codebytere): Use NSVisualEffectMaterial* constants directly once
     // they are available in the minimum SDK version
     if (type == "selection") {
       // NSVisualEffectMaterialSelection
@@ -1315,14 +1336,50 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
       vibrancyType = static_cast<NSVisualEffectMaterial>(7);
     } else if (type == "medium-light") {
       // NSVisualEffectMaterialMediumLight
+      EmitDeprecationWarning(
+          env, "NSVisualEffectMaterialMediumLight" + dep_warn, "electron");
       vibrancyType = static_cast<NSVisualEffectMaterial>(8);
     } else if (type == "ultra-dark") {
       // NSVisualEffectMaterialUltraDark
+      EmitDeprecationWarning(env, "NSVisualEffectMaterialUltraDark" + dep_warn,
+                             "electron");
       vibrancyType = static_cast<NSVisualEffectMaterial>(9);
     }
   }
 
-  [effect_view setMaterial:vibrancyType];
+  if (@available(macOS 10.14, *)) {
+    if (type == "header") {
+      // NSVisualEffectMaterialHeaderView
+      vibrancyType = static_cast<NSVisualEffectMaterial>(10);
+    } else if (type == "sheet") {
+      // NSVisualEffectMaterialSheet
+      vibrancyType = static_cast<NSVisualEffectMaterial>(11);
+    } else if (type == "window") {
+      // NSVisualEffectMaterialWindowBackground
+      vibrancyType = static_cast<NSVisualEffectMaterial>(12);
+    } else if (type == "hud") {
+      // NSVisualEffectMaterialHUDWindow
+      vibrancyType = static_cast<NSVisualEffectMaterial>(13);
+    } else if (type == "fullscreen-ui") {
+      // NSVisualEffectMaterialFullScreenUI
+      vibrancyType = static_cast<NSVisualEffectMaterial>(16);
+    } else if (type == "tooltip") {
+      // NSVisualEffectMaterialToolTip
+      vibrancyType = static_cast<NSVisualEffectMaterial>(17);
+    } else if (type == "content") {
+      // NSVisualEffectMaterialContentBackground
+      vibrancyType = static_cast<NSVisualEffectMaterial>(18);
+    } else if (type == "under-window") {
+      // NSVisualEffectMaterialUnderWindowBackground
+      vibrancyType = static_cast<NSVisualEffectMaterial>(21);
+    } else if (type == "under-page") {
+      // NSVisualEffectMaterialUnderPageBackground
+      vibrancyType = static_cast<NSVisualEffectMaterial>(22);
+    }
+  }
+
+  if (vibrancyType)
+    [effect_view setMaterial:vibrancyType];
 }
 
 void NativeWindowMac::SetTouchBar(

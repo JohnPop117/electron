@@ -79,6 +79,7 @@
 #include "shell/common/platform_util.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/resource/resource_bundle.h"
+#include "ui/native_theme/native_theme.h"
 #include "v8/include/v8.h"
 
 #if defined(OS_WIN)
@@ -114,6 +115,11 @@
 #include "chrome/browser/printing/printing_message_filter.h"
 #endif  // BUILDFLAG(ENABLE_PRINTING)
 
+#if defined(OS_MACOSX)
+#include "content/common/mac_helpers.h"
+#include "content/public/common/child_process_host.h"
+#endif
+
 using content::BrowserThread;
 
 namespace electron {
@@ -145,6 +151,12 @@ void SetApplicationLocaleOnIOThread(const std::string& locale) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
   g_io_thread_application_locale.Get() = locale;
 }
+
+#if defined(OS_WIN)
+const base::FilePath::StringPieceType kPathDelimiter = FILE_PATH_LITERAL(";");
+#else
+const base::FilePath::StringPieceType kPathDelimiter = FILE_PATH_LITERAL(":");
+#endif
 
 }  // namespace
 
@@ -182,7 +194,7 @@ content::WebContents* AtomBrowserClient::GetWebContentsFromProcessID(
     int process_id) {
   // If the process is a pending process, we should use the web contents
   // for the frame host passed into RegisterPendingProcess.
-  if (base::ContainsKey(pending_processes_, process_id))
+  if (base::Contains(pending_processes_, process_id))
     return pending_processes_[process_id];
 
   // Certain render process will be created with no associated render view,
@@ -328,7 +340,7 @@ void AtomBrowserClient::ConsiderSiteInstanceForAffinity(
 }
 
 bool AtomBrowserClient::IsRendererSubFrame(int process_id) const {
-  return base::ContainsKey(renderer_is_subframe_, process_id);
+  return base::Contains(renderer_is_subframe_, process_id);
 }
 
 void AtomBrowserClient::RenderProcessWillLaunch(
@@ -396,6 +408,11 @@ void AtomBrowserClient::OverrideWebkitPrefs(content::RenderViewHost* host,
   prefs->default_minimum_page_scale_factor = 1.f;
   prefs->default_maximum_page_scale_factor = 1.f;
   prefs->navigate_on_drag_drop = false;
+
+  ui::NativeTheme* native_theme = ui::NativeTheme::GetInstanceForNativeUi();
+  prefs->preferred_color_scheme = native_theme->SystemDarkModeEnabled()
+                                      ? blink::PreferredColorScheme::kDark
+                                      : blink::PreferredColorScheme::kLight;
 
   SetFontDefaults(prefs);
 
@@ -480,7 +497,17 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
   // Make sure we're about to launch a known executable
   {
     base::FilePath child_path;
+#if defined(OS_MACOSX)
+    int flags = content::ChildProcessHost::CHILD_NORMAL;
+    if (base::EndsWith(command_line->GetProgram().value(),
+                       content::kMacHelperSuffix_renderer,
+                       base::CompareCase::SENSITIVE)) {
+      flags = content::ChildProcessHost::CHILD_RENDERER;
+    }
+    child_path = content::ChildProcessHost::GetChildPath(flags);
+#else
     base::PathService::Get(content::CHILD_PROCESS_EXE, &child_path);
+#endif
 
     base::ThreadRestrictions::ScopedAllowIO allow_io;
     CHECK(base::MakeAbsoluteFilePath(command_line->GetProgram()) == child_path);
@@ -524,8 +551,12 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
     if (web_preferences)
       web_preferences->AppendCommandLineSwitches(
           command_line, IsRendererSubFrame(process_id));
-    SessionPreferences::AppendExtraCommandLineSwitches(
-        web_contents->GetBrowserContext(), command_line);
+    auto preloads =
+        SessionPreferences::GetValidPreloads(web_contents->GetBrowserContext());
+    if (!preloads.empty())
+      command_line->AppendSwitchNative(
+          switches::kPreloadScripts,
+          base::JoinString(preloads, kPathDelimiter));
     if (CanUseCustomSiteInstance()) {
       command_line->AppendSwitch(
           switches::kDisableElectronSiteInstanceOverrides);
@@ -591,7 +622,7 @@ void AtomBrowserClient::AllowCertificateError(
   }
 }
 
-void AtomBrowserClient::SelectClientCertificate(
+base::OnceClosure AtomBrowserClient::SelectClientCertificate(
     content::WebContents* web_contents,
     net::SSLCertRequestInfo* cert_request_info,
     net::ClientCertIdentityList client_certs,
@@ -601,6 +632,7 @@ void AtomBrowserClient::SelectClientCertificate(
                                        std::move(client_certs),
                                        std::move(delegate));
   }
+  return base::OnceClosure();
 }
 
 bool AtomBrowserClient::CanCreateWindow(
@@ -727,10 +759,6 @@ AtomBrowserClient::GetServiceManifestOverlay(base::StringPiece name) {
 std::vector<service_manager::Manifest>
 AtomBrowserClient::GetExtraServiceManifests() {
   return GetElectronBuiltinServiceManifests();
-}
-
-net::NetLog* AtomBrowserClient::GetNetLog() {
-  return g_browser_process->net_log();
 }
 
 std::unique_ptr<content::BrowserMainParts>
@@ -907,11 +935,11 @@ bool AtomBrowserClient::ShouldBypassCORB(int render_process_id) const {
   return it != process_preferences_.end() && !it->second.web_security;
 }
 
-std::string AtomBrowserClient::GetProduct() const {
+std::string AtomBrowserClient::GetProduct() {
   return "Chrome/" CHROME_VERSION_STRING;
 }
 
-std::string AtomBrowserClient::GetUserAgent() const {
+std::string AtomBrowserClient::GetUserAgent() {
   if (user_agent_override_.empty())
     return GetApplicationUserAgent();
   return user_agent_override_;

@@ -266,7 +266,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   int GetFrameRate() const;
 #endif
   void Invalidate();
-  gfx::Size GetSizeForNewRenderView(content::WebContents*) const override;
+  gfx::Size GetSizeForNewRenderView(content::WebContents*) override;
 
   // Methods for zoom handling.
   void SetZoomLevel(double level);
@@ -289,7 +289,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
                       const scoped_refptr<network::ResourceRequestBody>& body);
 
   // Returns the preload script path of current WebContents.
-  v8::Local<v8::Value> GetPreloadPath(v8::Isolate* isolate) const;
+  std::vector<base::FilePath::StringType> GetPreloadPaths() const;
 
   // Returns the web preferences of current WebContents.
   v8::Local<v8::Value> GetWebPreferences(v8::Isolate* isolate) const;
@@ -403,7 +403,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
                  bool final_update) override;
   bool CheckMediaAccessPermission(content::RenderFrameHost* render_frame_host,
                                   const GURL& security_origin,
-                                  blink::MediaStreamType type) override;
+                                  blink::mojom::MediaStreamType type) override;
   void RequestMediaAccessPermission(
       content::WebContents* web_contents,
       const content::MediaStreamRequest& request,

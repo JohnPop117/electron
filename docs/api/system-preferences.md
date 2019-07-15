@@ -41,19 +41,13 @@ Returns:
 * `event` Event
 * `highContrastColorScheme` Boolean - `true` if a high contrast theme is being used, `false` otherwise.
 
-### Event: 'appearance-changed' _macOS_
-
-Returns:
-
-* `newAppearance` String - Can be `dark` or `light`
-
-**NOTE:** This event is only emitted after you have called `startAppLevelAppearanceTrackingOS`
-
 ## Methods
 
 ### `systemPreferences.isDarkMode()` _macOS_
 
 Returns `Boolean` - Whether the system is in Dark Mode.
+
+**Note:** On macOS 10.15 Catalina in order for this API to return the correct value when in the "automatic" dark mode setting you must either have `NSRequiresAquaSystemAppearance=false` in your `Info.plist` or be on Electron `>=7.0.0`.  See the [dark mode guide](../tutorial/mojave-dark-mode-guide.md) for more information.
 
 ### `systemPreferences.isSwipeTrackingFromScrollEventsEnabled()` _macOS_
 
@@ -90,13 +84,15 @@ that contains the user information dictionary sent along with the notification.
 * `callback` Function
   * `event` String
   * `userInfo` Object
+  * `object` String
 
 Returns `Number` - The ID of this subscription
 
 Subscribes to native notifications of macOS, `callback` will be called with
 `callback(event, userInfo)` when the corresponding `event` happens. The
 `userInfo` is an Object that contains the user information dictionary sent
-along with the notification.
+along with the notification. The `object` is the sender of the notification,
+and only supports `NSString` values for now.
 
 The `id` of the subscriber is returned, which can be used to unsubscribe the
 `event`.
@@ -115,6 +111,7 @@ example values of `event` are:
 * `callback` Function
   * `event` String
   * `userInfo` Object
+  * `object` String
 
 Returns `Number` - The ID of this subscription
 
@@ -127,6 +124,7 @@ This is necessary for events such as `NSUserDefaultsDidChangeNotification`.
 * `callback` Function
   * `event` String
   * `userInfo` Object
+  * `object` String
 
 Same as `subscribeNotification`, but uses `NSWorkspace.sharedWorkspace.notificationCenter`.
 This is necessary for events such as `NSWorkspaceDidActivateApplicationNotification`.
