@@ -1558,7 +1558,7 @@ void WebContents::InspectSharedWorker() {
   }
 }
 
-void WebContents::InspectSharedWorkerById(std::string worker_id) {
+void WebContents::InspectSharedWorkerById(std::string workerId) {
   if (type_ == Type::REMOTE)
     return;
 
@@ -1568,7 +1568,7 @@ void WebContents::InspectSharedWorkerById(std::string worker_id) {
   for (const auto& agent_host : content::DevToolsAgentHost::GetOrCreateAll()) {
     if (agent_host->GetType() ==
         content::DevToolsAgentHost::kTypeSharedWorker) {
-      if (agent_host->GetId() == worker_id) {
+      if (agent_host->GetId() == workerId) {
         OpenDevTools(nullptr);
         managed_web_contents()->AttachTo(agent_host);
         break;
