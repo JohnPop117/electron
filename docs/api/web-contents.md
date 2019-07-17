@@ -1464,7 +1464,9 @@ Starts inspecting element at position (`x`, `y`).
 
 Opens the developer tools for the shared worker context.
 
-#### `contents.InspectSharedWorkerById(std::string worker_id)`
+#### `contents.inspectSharedWorkerById(workerId)`
+
+* `worker_id` String
 
 Inspects the shared worker based on it's id
 
